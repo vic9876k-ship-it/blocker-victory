@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Victory - Safe Browsing & Accountability</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      font-family:Arial,sans-serif;
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:radial-gradient(circle at top,#0a1a3a,#050b1f);
+      color:white;
+      overflow:hidden;
+      position:relative;
+    }
+
+    body::before{
+      content:"";
+      position:absolute;
+      width:400px;
+      height:400px;
+      background:rgba(0,140,255,.15);
+      filter:blur(100px);
+      border-radius:50%;
+      top:10%;
+      left:50%;
+      transform:translateX(-50%);
+      animation:float 6s ease-in-out infinite;
+      z-index:0;
+    }
+
+    @keyframes float{
+      0%,100%{
+        transform:translateX(-50%) translateY(0);
+      }
+      50%{
+        transform:translateX(-50%) translateY(20px);
+      }
+    }
+
+    .container{
+      position:relative;
+      z-index:1;
+      width:90%;
+      max-width:450px;
+      padding:32px;
+      text-align:center;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:18px;
+      backdrop-filter:blur(12px);
+      box-shadow:0 20px 40px rgba(0,0,0,.5);
+    }
+
+    .logo{
+      font-size:48px;
+      margin-bottom:10px;
+    }
+
+    h1{
+      font-size:28px;
+      margin-bottom:10px;
+    }
+
+    .subtitle{
+      color:#a9c4ff;
+      margin-bottom:20px;
+    }
+
+    .blocked-domain{
+      padding:12px;
+      margin:15px 0;
+      border-radius:10px;
+      background:rgba(255,0,0,.12);
+      color:#ffb3b3;
+      font-weight:bold;
+      word-break:break-word;
+      min-height:20px;
+    }
+
+    p{
+      color:#d6e2ff;
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .encouragement{
+      margin-top:18px;
+      padding:14px;
+      border-radius:10px;
+      background:rgba(34,197,94,.08);
+      border:1px solid rgba(34,197,94,.2);
+      color:#dfffe8;
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .divider{
+      width:100%;
+      height:1px;
+      background:rgba(255,255,255,.08);
+      margin:18px 0;
+    }
+
+    .actions{
+      margin-top:10px;
+    }
+
+    button{
+      margin-top:10px;
+      padding:10px 18px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:bold;
+      transition:.2s;
+    }
+
+    #goBackBtn{
+      background:#2f6bff;
+      color:white;
+    }
+
+    #goBackBtn:hover{
+      background:#1f4fd6;
+    }
+
+    .footer{
+      margin-top:15px;
+      font-size:11px;
+      opacity:.6;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="logo">🛡️</div>
+
+    <h1>Site Blocked</h1>
+
+    <p class="subtitle">
+      Victory Extension has restricted access to this website
+    </p>
+
+    <div class="blocked-domain" id="domain"></div>
+
+    <p>
+      This site is categorized as adult / NSFW content.
+      Access has been restricted to help maintain safe browsing habits.
+    </p>
+
+    <div class="encouragement">
+      Focus on feeding on the Word of God. Strength grows where attention goes.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="actions">
+      <button id="goBackBtn">← Go Back</button>
+    </div>
+
+    <div class="footer">
+      Powered by Victory Extension
+    </div>
+
+  </div>
+
+  <script src="blocked.js"></script>
+
+</body>
+</html>

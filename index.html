@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Purpose Partner</title>
+		<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#900000">
+
+  <script type="module" src="/js/dashboard.js"></script>
+	<style>
+		body {
+			min-height: 100vh;
+			background: url('/assets/background-image.png') no-repeat center center fixed;
+			background-size: cover;
+			margin: 0;
+			font-family: 'Segoe UI', Arial, sans-serif;
+		}
+		.overlay {
+			background: rgba(255,255,255,0.85);
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+		}
+		.main-content {
+			padding: 48px 0 0 0;
+		}
+		.purpose-title {
+			color: #900000;
+			font-weight: 700;
+			font-size: 3rem;
+		}
+		.purpose-subtitle {
+			color: #444;
+			font-size: 1.3rem;
+			margin-bottom: 32px;
+		}
+		.step-icon {
+			background: #900000;
+			color: #fff;
+			border-radius: 50%;
+			width: 44px;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.5rem;
+			margin-right: 16px;
+		}
+		.step-title {
+			font-weight: 600;
+			color: #222;
+		}
+		.step-desc {
+			color: #555;
+			font-size: 1rem;
+		}
+		.get-started-btn {
+			background: #900000;
+			color: #fff;
+			font-weight: 600;
+			border: none;
+			border-radius: 6px;
+			padding: 12px 32px;
+			font-size: 1.2rem;
+			margin-top: 32px;
+			transition: background 0.2s;
+		}
+		.get-started-btn:hover {
+			background: #700000;
+		}
+		.footer-bar {
+			background: #900000;
+			color: #fff;
+			padding: 12px 0;
+			text-align: center;
+			font-size: 1rem;
+			letter-spacing: 0.5px;
+		}
+		@media (max-width: 768px) {
+			.main-content {
+				padding: 24px 0 0 0;
+			}
+			.purpose-title {
+				font-size: 2rem;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="overlay">
+		<div class="container main-content">
+			<div class="row">
+				<div class="col-lg-6 col-md-8 col-12">
+					<h1 class="purpose-title mb-2">Purpose Partner</h1>
+					<div class="purpose-subtitle mb-4">Accountability. Support. Real Change.</div>
+					<p class="mb-4" style="color:#444;">An organisation of accounatability partners around the world that help to monitor progress and provide the support that makes a difference.</p>
+					<div class="mb-4">
+						<div class="d-flex align-items-start mb-3">
+							<div class="step-icon"><span>&#128279;</span></div>
+							<div>
+								<div class="step-title">Join the accountability system</div>
+								<div class="step-desc">Click the button below to direct your partner on how to install the victory extension.</div>
+								<button class="get-started-btn mb-3" id="generate-link-btn" type="button">Continue to installation&nbsp;→</button>
+								<div id="link-section" style="display:none;">
+									<div class="input-group mb-2">
+										<input type="text" id="generated-link" class="form-control" readonly value="">
+										<button class="btn btn-outline-secondary" type="button" id="copy-link-btn">Copy</button>
+									</div>
+									<small class="text-success" id="copy-success" style="display:none;">Link copied!</small>
+								</div>
+							</div>
+						</div>
+						<div class="d-flex align-items-start mb-3">
+							<div class="step-icon"><span>&#128233;</span></div>
+							<div>
+								<div class="step-title">Install & connect</div>
+								<div class="step-desc">They install the Victory extension and share the extension's  pairing code to connect automatically.</div>
+							</div>
+						</div>
+						<div class="d-flex align-items-start mb-3">
+							<div class="step-icon"><span>&#128187;</span></div>
+							
+								 
+							>
+						
+						<div class="d-flex align-items-start mb-3">
+							
+							<div>
+							 	<div class="step-title">You stay informed</div>
+								<div class="step-desc">Receive real-time updates and alerts on their activity.</div>
+							</div>
+						</div>
+					</div>
+					<button class="get-started-btn" id="get-started-main">Continue &nbsp;→</button>
+				</div>
+			</div>
+		</div>
+		<div class="footer-bar mt-auto">
+			<span style="margin-right:8px;vertical-align:middle;">
+				<svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:middle;"><path d="M8 0c-.69 0-1.25.56-1.25 1.25v.25H2.75C1.23 1.5 0 2.73 0 4.25v7.5C0 13.27 1.23 14.5 2.75 14.5h10.5c1.52 0 2.75-1.23 2.75-2.75v-7.5C16 2.73 14.77 1.5 13.25 1.5h-4V1.25C9.25.56 8.69 0 8 0zm0 2c.41 0 .75.34.75.75v.75h-1.5v-.75c0-.41.34-.75.75-.75zM2.75 2.5h10.5c.97 0 1.75.78 1.75 1.75v7.5c0 .97-.78 1.75-1.75 1.75H2.75A1.75 1.75 0 0 1 1 11.75v-7.5C1 3.28 1.78 2.5 2.75 2.5z"/></svg>
+			</span>
+			&copy; 2026  Purpose Partner.org 
+				</div>
+	</div>
+<script type="module" src="/app.js"></script>
+<script type="module" src="/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Victory - Safe Browsing & Accountability</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    min-height:100vh;
+}
+
+.wrapper{
+    display:flex;
+    min-height:100vh;
+}
+
+/* LEFT SIDE */
+.left-panel{
+    width:380px;
+    background:#111827;
+    border-right:1px solid #1e293b;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:30px;
+}
+
+.container{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    align-items:center;
+}
+
+h2{
+    color:#60a5fa;
+    font-size:30px;
+    margin-bottom:10px;
+}
+
+input#nameInput{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #334155;
+    background:#0f172a;
+    color:white;
+    font-size:15px;
+    outline:none;
+}
+
+input#nameInput:focus{
+    border-color:#2563eb;
+}
+
+#status{
+    color:#cbd5e1;
+    font-size:14px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:15px;
+    transition:.2s;
+}
+
+#googleBtn{
+    background:#2563eb;
+    color:white;
+}
+
+#googleBtn:hover{
+    background:#1d4ed8;
+}
+
+#signOutBtn{
+    background:#ef4444;
+    color:white;
+}
+
+#signOutBtn:hover{
+    background:#dc2626;
+}
+
+h3{
+    color:#94a3b8;
+    margin-top:10px;
+}
+
+#pairing-code{
+    color:#22c55e;
+    letter-spacing:4px;
+}
+
+#expiry{
+    color:#94a3b8;
+    font-size:13px;
+}
+
+/* RIGHT SIDE */
+.right-panel{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:60px;
+}
+
+.content{
+    max-width:700px;
+    text-align:center;
+}
+
+.content h1{
+    font-size:48px;
+    color:#60a5fa;
+    margin-bottom:20px;
+}
+
+.content p{
+    font-size:20px;
+    line-height:1.8;
+    color:#e2e8f0;
+}
+
+.verse{
+    margin-top:30px;
+    padding:30px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:16px;
+}
+
+.reference{
+    margin-top:20px;
+    color:#22c55e;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.mission{
+    margin-top:40px;
+    color:#94a3b8;
+    font-size:18px;
+}
+
+/* MOBILE */
+@media(max-width:900px){
+
+    .wrapper{
+        flex-direction:column;
+    }
+
+    .left-panel{
+        width:100%;
+        border-right:none;
+        border-bottom:1px solid #1e293b;
+    }
+
+    .right-panel{
+        padding:30px;
+    }
+
+    .content h1{
+        font-size:34px;
+    }
+
+    .content p{
+        font-size:18px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <!-- LEFT SIDE -->
+    <div class="left-panel">
+
+        <div class="container">
+
+            <h2>Victory Login</h2>
+
+            <input id="displayName" placeholder="Enter name">
+
+            <p id="status">Not signed in</p>
+
+            <button id="googleBtn">
+                Sign in with Google
+            </button>
+
+            <button id="signOutBtn" style="display:none;">
+                Sign Out
+            </button>
+
+            <h3>Pairing Code:</h3>
+
+            <h1 id="pairingCode">------</h1>
+
+            <p id="expiry"></p>
+
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="right-panel">
+
+        <div class="content">
+
+            <h1>Victory - Safe Browsing & Accountability</h1>
+
+            <div class="verse">
+
+                <p>
+                    “No temptation has overtaken you except what is common to mankind.
+                    And God is faithful; He will not let you be tempted beyond what
+                    you can bear. But when you are tempted, He will also provide a way
+                    out so that you can endure it.”
+                </p>
+
+                <div class="reference">
+                    1 Corinthians 10:13
+                </div>
+
+            </div>
+
+            <div class="mission">
+                Victory helps reduce exposure to harmful online content,
+                encourages accountability, and supports healthier digital habits.
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script type="module" src="./popup.js"></script>
+
+</body>
+</html>

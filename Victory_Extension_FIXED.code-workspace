@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "D:/Purpose partner PWA"
+		},
+		{
+			"path": "../../../../Purpose partner PWA"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "Purpose partner PWA"
+	}
+}

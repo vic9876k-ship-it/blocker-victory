@@ -1,0 +1,291 @@
+
+/* =========================
+   DASHBOARD LAYOUT (ADD-ON ONLY)
+========================= */
+
+.dashboard {
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
+}
+
+/* TOP PROFILE CARD */
+.profile-card {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* MAIN GRID */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+/* LEFT FEED */
+.feed {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 10px;
+  min-height: 400px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* RIGHT SIDEBAR */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* STATUS DOT */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background: green;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 6px;
+}
+
+/* LIVE FEED ITEMS */
+.log-item {
+  padding: 10px;
+  border-left: 4px solid var(--primary-red);
+  margin-bottom: 10px;
+  background: var(--light-gray);
+  border-radius: 6px;
+}
+
+/* RESPONSIVE DASHBOARD */
+@media (max-width: 768px) {
+
+  .dashboard-container {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    flex-direction: column;
+  }
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+/* =========================
+   ROOT COLORS
+========================= */
+:root {
+  --primary-red: #8b0000;
+  --dark-red: #5c0000;
+  --white: #ffffff;
+  --light-gray: #f5f5f5;
+  --dark-bg: #121212;
+  --text-color: #222222;
+}
+
+
+/* =========================
+   BODY
+========================= */
+body {
+  font-family: Arial, sans-serif;
+  background: var(--light-gray);
+  color: var(--text-color);
+  min-height: 100vh;
+}
+
+
+/* =========================
+   HEADER / NAVBAR
+========================= */
+header {
+  background: var(--primary-red);
+  color: var(--white);
+  padding: 15px 20px;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav h1 {
+  font-size: 1.5rem;
+}
+
+
+/* =========================
+   MAIN CONTAINER
+========================= */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto;
+}
+
+
+/* =========================
+   CARDS
+========================= */
+.card {
+  background: var(--white);
+  border-left: 5px solid var(--primary-red);
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+button {
+  background: var(--primary-red);
+  color: var(--white);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  background: var(--dark-red);
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+
+/* =========================
+   LINKS
+========================= */
+a {
+  color: var(--primary-red);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+footer {
+  background: var(--primary-red);
+  color: var(--white);
+  text-align: center;
+  padding: 15px;
+  margin-top: 40px;
+}
+
+
+/* =========================
+   UTILITY CLASSES
+========================= */
+.text-center {
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .container {
+    width: 95%;
+  }
+}
+
+
+/* =========================
+   SAFE RESPONSIVE FIX (NO STRUCTURE CHANGES)
+========================= */
+
+/* Prevent horizontal overflow issues */
+body {
+  overflow-x: hidden;
+}
+
+/* Make all cards behave consistently */
+.card,
+.profile-card,
+.feed {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure main layout doesn't break */
+.dashboard-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* LEFT + RIGHT SAFE BEHAVIOR */
+.feed {
+  flex: 2;
+  min-width: 300px;
+}
+
+.sidebar {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Prevent weird stretching */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Buttons stay stable */
+button {
+  max-width: 100%;
+}
+
+/* MOBILE FIX ONLY (NO RESTRUCTURE) */
+@media (max-width: 768px) {
+
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .feed,
+  .sidebar {
+    flex: 1 1 100%;
+  }
+
+}

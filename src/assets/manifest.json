@@ -1,0 +1,31 @@
+{
+"manifest_version": 3,
+"name": "Victory",
+"version": "1.0",
+"permissions": [
+"tabs",
+"storage"
+],
+"host_permissions": [
+"<all_urls>"
+],
+"background": {
+"service_worker": "background.js"
+},
+"action": {
+"default_popup": "popup/popup.html",
+"default_icon": {
+"16": "Icons/favicon-16x16.png",
+"48": "Icons/android-chrome-192x192.png",
+"128": "Icons/android-chrome-192x192.png"
+}
+},
+"web_accessible_resources": [
+{
+"resources": [
+"sites.json",
+"blocked.html"
+],
+"matches": ["<all_urls>"]
+}
+]}
