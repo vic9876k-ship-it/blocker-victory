@@ -571,6 +571,7 @@ async function writePairingCode(pairingCode, deviceId, userEmail, uid, userName)
           fields: {
             deviceId: { stringValue: deviceId },
             userEmail: { stringValue: sanitizeString(userEmail) || "" },
+            userName: { stringValue: sanitizeString(userName) || "" },
             expiresAt: { integerValue: String(expiresAt) },
             used: { booleanValue: false },
             uid: { stringValue: uid || "" }
@@ -917,9 +918,18 @@ const finalName =
           email: authData.email
         });
       } catch (e) {
-        console.error("[Victory] login error:", e);
-        sendResponse({ ok: false, error: sanitizeString(e.message) });
-      }
+    console.error("[Victory] login error:", e);
+    console.error("[Victory] login error:", e);
+console.dir(e);
+console.log("message:", e?.message);
+console.log("name:", e?.name);
+console.log("stack:", e?.stack);
+
+    sendResponse({
+        ok: false,
+        error: e?.message || JSON.stringify(e)
+    });
+}
     })();
 
     return true;
@@ -987,6 +997,9 @@ if (!partnerUids.includes(msg.partnerUid)) {
   if (msg.type === "LOGOUT") {
     (async () => {
       try {
+        // Write disabled message before logging out
+        await writeDisabledMessage();
+        
         stopHeartbeat();
         if (offlineRetryTimer) clearInterval(offlineRetryTimer);
         
@@ -1103,7 +1116,7 @@ async function showEncouragement() {
 
     chrome.notifications.create({
         type: "basic",
-        iconUrl: "/img/icons/icon-192x192.png",
+        iconUrl: "/Img/icons/icon-192x192.png",
         title: "Victory",
         message
     });
@@ -1137,6 +1150,81 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 }
 // Call this in console: debugToken()
+/* =========================
+   DISABLED MESSAGE WRITE
+========================= */
+async function writeDisabledMessage() {
+  try {
+    const { uid, deviceId, userName, userEmail } = await chrome.storage.local.get([
+      "uid",
+      "deviceId",
+      "userName",
+      "userEmail"
+    ]);
+
+    if (!uid || !deviceId) {
+      console.warn("[Victory] Missing uid or deviceId for disabled message");
+      return;
+    }
+
+    const displayName = sanitizeString(userName) || (userEmail ? userEmail.split("@")[0] : "User");
+    const message = `${displayName} disabled the Victory Protection service.`;
+
+    const partnerUids = await getPartnerUidsFromDevice();
+    console.log("[Victory] Writing disabled message to", partnerUids.length, "partners");
+
+    const logEntry = {
+      uid: uid,
+      deviceId: deviceId,
+      partnerUid: "",
+      domainHash: "disabled",
+      domain: "extension_disabled",
+      userEmail: sanitizeString(userEmail) || "",
+      userName: displayName,
+      message: message,
+      createdAt: new Date().toISOString(),
+      timestamp: Date.now()
+    };
+
+    if (partnerUids.length === 0) {
+      console.log("[Victory] No partners, writing single disabled message");
+      try {
+        await addToOfflineQueue(logEntry);
+        processOfflineQueue();
+        console.log("[Victory] Disabled message written");
+      } catch (err) {
+        console.log("[Victory] Disabled message failed (may be queued):", err.message);
+      }
+    } else {
+      console.log("[Victory] Writing disabled messages for", partnerUids.length, "partners");
+      for (const partnerUid of partnerUids) {
+        const partnerLog = { ...logEntry, partnerUid };
+        try {
+          await addToOfflineQueue(partnerLog);
+          processOfflineQueue();
+          console.log("[Victory] Disabled message written for:", partnerUid);
+        } catch (err) {
+          console.log("[Victory] Disabled message failed (may be queued):", err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Victory] writeDisabledMessage error:", err);
+  }
+}
+
+/* =========================
+   EXTENSION DISABLE DETECTION
+========================= */
+chrome.runtime.onSuspend.addListener(async () => {
+  console.log("[Victory] Extension being suspended/disabled");
+  try {
+    await writeDisabledMessage();
+  } catch (err) {
+    console.error("[Victory] Failed to write disabled message on suspend:", err);
+  }
+});
+
 /* =========================
    INIT
 ========================= */

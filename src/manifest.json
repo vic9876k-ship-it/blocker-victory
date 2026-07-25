@@ -68,6 +68,15 @@
       "http://localhost:5173/*",
       "http://localhost:4173/*",
       "https://victory-fb944.firebaseapp.com/*"
-    ]
+    ],
+    "declarative_net_request": {
+  "rule_resources": [
+    {
+      "id": "victory_rules",
+      "enabled": true,
+      "path": "rules.json"
+    }
+  ]
+}
   }
 }
