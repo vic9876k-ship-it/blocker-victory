@@ -32,6 +32,8 @@ const SAFE_DOMAINS = [
 ];
 
 const MAX_LOGS_PER_MINUTE = 30;
+const BATCH_INTERVAL_MS = 2 * 60 * 1000;
+const BATCH_ALARM_NAME = "victoryBatchSummary";
 const HEARTBEAT_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const MAX_HEARTBEAT_RETRIES = 3;
 const MAX_URL_LENGTH = 2048;
@@ -70,9 +72,129 @@ const ENCOURAGEMENT_MESSAGES = [
 ];
 
 let globalLogTimestamps = [];
+let isProcessingQueue = false; // NEW: prevents concurrent batch runs
+let isWritingBatch = false;  // prevents overlapping batch writes
 let heartbeatRetryCount = 0;
 let heartbeatTimer = null;
 let offlineRetryTimer = null;
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === BATCH_ALARM_NAME) {
+        writeBatchSummary();
+    }
+});
+
+function startBatchScheduler() {
+    chrome.alarms.create(BATCH_ALARM_NAME, {
+        delayInMinutes: 360,
+        periodInMinutes: 360,
+    });
+}
+
+/* =========================
+   BATCHED SUMMARY (6 hours)
+========================= */
+async function getBlockCount() {
+  const { blockCount = 0 } = await chrome.storage.local.get("blockCount");
+  return blockCount;
+}
+
+async function incrementBlockCount() {
+  const count = await getBlockCount();
+  await chrome.storage.local.set({ blockCount: count + 1 });
+  return count + 1;
+}
+
+async function resetBlockCount() {
+  await chrome.storage.local.set({ blockCount: 0 });
+}
+
+async function writeBatchSummary() {
+  // Guard #1: don't run two batches at once
+  if (isWritingBatch) {
+    console.log("[Victory] Batch already running");
+    return;
+  }
+
+  isWritingBatch = true;
+
+  try {
+    // Guard #2: if no blocks happened, DO NOT touch Firestore at all
+    const count = await getBlockCount();
+    if (count === 0) {
+      console.log("[Victory] No blocks to summarize — skipping Firestore");
+      return;
+    }
+
+    const {
+      uid,
+      firebaseUid,
+      deviceId,
+      userEmail,
+      userName
+    } = await chrome.storage.local.get([
+      "uid",
+      "firebaseUid",
+      "deviceId",
+      "userEmail",
+      "userName"
+    ]);
+
+    const effectiveUid = firebaseUid || uid;
+    if (!effectiveUid || !deviceId) {
+      console.warn("[Victory] Missing uid/deviceId for batch summary");
+      return;
+    }
+
+    const displayName = sanitizeString(userName) || 
+      (userEmail ? userEmail.split("@")[0] : "User");
+
+    const first = displayName.split(" ")[0];
+    const message = count === 1 
+      ? `${first} attempted to visit a restricted site`
+      : `${count} attempts by ${first} to visit restricted sites`;
+
+    const partnerUids = await getPartnerUidsFromDevice();
+
+    const summaryEntry = {
+      uid: effectiveUid,
+      deviceId: deviceId,
+      partnerUid: "",
+      domainHash: "batch_summary",
+      domain: "batch",
+      userEmail: sanitizeString(userEmail) || "",
+      userName: displayName,
+      message: message,
+      count: count,
+      type: "summary",
+      createdAt: new Date().toISOString(),
+      timestamp: Date.now()
+    };
+
+    // Queue everything first
+    if (partnerUids.length === 0) {
+      await addToOfflineQueue(summaryEntry);
+    } else {
+      for (const partnerUid of partnerUids) {
+        const partnerLog = { ...summaryEntry, partnerUid };
+        await addToOfflineQueue(partnerLog);
+      }
+    }
+
+    // Now flush the queue (one batch run)
+    await processOfflineQueue();
+
+    // Only reset the counter after successful queueing + flush
+    await resetBlockCount();
+    console.log("[Victory] Batch summary sent. Count was:", count);
+
+  } catch (err) {
+    console.error("[Victory] writeBatchSummary failed:", err);
+    // If anything fails, DO NOT reset the counter so it retries next cycle
+  } finally {
+    isWritingBatch = false;
+  }
+}
 
 /* =========================
    OFFLINE QUEUE MANAGEMENT
@@ -84,8 +206,10 @@ async function getOfflineQueue() {
 
 async function addToOfflineQueue(logEntry) {
   const queue = await getOfflineQueue();
+  
   queue.push({
     ...logEntry,
+    entryId: crypto.randomUUID(), // NEW: unique ID for reliable filtering
     queuedAt: Date.now()
   });
   
@@ -101,29 +225,51 @@ async function clearOfflineQueue() {
   await chrome.storage.local.set({ offlineQueue: [] });
 }
 
+
+
 async function processOfflineQueue() {
-  const queue = await getOfflineQueue();
-  if (queue.length === 0) return;
-  
-  console.log("[Victory] Processing offline queue:", queue.length);
-  
-  const successful = [];
-  
-  for (const entry of queue) {
-    try {
-      await firestoreWrite("blockedVisits", entry, false);
-      successful.push(entry);
-    } catch (err) {
-      console.warn("[Victory] Failed to send queued log:", err.message);
-      break;
-    }
+  // GUARD #1: Already running
+  if (isProcessingQueue) {
+    console.log("[Victory] Queue processing already in progress, skipping");
+    return;
   }
   
-  const remaining = queue.filter(q => !successful.includes(q));
-  await chrome.storage.local.set({ offlineQueue: remaining });
+  const queue = await getOfflineQueue();
   
-  if (successful.length > 0) {
-    console.log("[Victory] Sent", successful.length, "queued logs");
+  // GUARD #2: Nothing to send = zero Firestore writes
+  if (queue.length === 0) {
+    console.log("[Victory] Offline queue empty, no Firestore write needed");
+    return;
+  }
+  
+  isProcessingQueue = true;
+  console.log("[Victory] Processing offline queue:", queue.length);
+  
+  try {
+    const successfulIds = new Set(); // NEW: track by ID, not object reference
+    
+    for (const entry of queue) {
+      try {
+        await firestoreWrite("blockedVisits", entry, false);
+        if (entry.entryId) successfulIds.add(entry.entryId);
+        else successfulIds.add(entry.timestamp); // fallback
+      } catch (err) {
+        console.warn("[Victory] Failed to send queued log:", err.message);
+        break; // Stop on first failure, retry later
+      }
+    }
+    
+    // Keep only entries that failed
+    const remaining = queue.filter(q => {
+      const id = q.entryId || q.timestamp;
+      return !successfulIds.has(id);
+    });
+    
+    await chrome.storage.local.set({ offlineQueue: remaining });
+    
+    console.log("[Victory] Sent", successfulIds.size, "queued logs,", remaining.length, "remaining");
+  } finally {
+    isProcessingQueue = false; // RELEASE lock regardless of outcome
   }
 }
 
@@ -743,10 +889,10 @@ function stopHeartbeat() {
 ========================= */
 async function logBlockedVisit(url) {
   console.log("[Victory] logBlockedVisit called with:", url);
-  
+
   try {
     const now = Date.now();
-    
+
     // Global rate limit
     globalLogTimestamps = globalLogTimestamps.filter(ts => now - ts < 60000);
     if (globalLogTimestamps.length >= MAX_LOGS_PER_MINUTE) {
@@ -754,112 +900,25 @@ async function logBlockedVisit(url) {
       return;
     }
     globalLogTimestamps.push(now);
-    
+
     const domain = sanitizeDomain(url);
-    if (!domain) {
-      console.warn("[Victory] Could not sanitize domain from:", url);
-      return;
-    }
-    
-    console.log("[Victory] Sanitized domain:", domain);
-    
-    if (SAFE_DOMAINS.some(d => domain.includes(d))) {
-      console.log("[Victory] safe domain skipped:", domain);
-      return;
-    }
+    if (!domain) return;
+
+    if (SAFE_DOMAINS.some(d => domain.includes(d))) return;
 
     // Per-domain cooldown
     const last = recentLogs.get(domain);
-    if (last && now - last < LOG_COOLDOWN) {
-      console.log("[Victory] Domain cooldown active for:", domain);
-      return;
-    }
+    if (last && now - last < LOG_COOLDOWN) return;
     recentLogs.set(domain, now);
 
-    // Privacy: hash the domain
-    const domainHash = await hashDomain(domain);
-    console.log("[Victory] Domain hash:", domainHash);
-    
-    const partnerUids = await getPartnerUidsFromDevice();
-    console.log("[Victory] Partner UIDs:", partnerUids);
-    
-    const {
-      uid,
-      firebaseUid,
-      deviceId,
-      userEmail,
-      userName
-    } = await chrome.storage.local.get([
-      "uid",
-      "firebaseUid",
-      "deviceId",
-      "userEmail",
-      "userName"
-    ]);
+    // Just increase the local counter
+    await incrementBlockCount();
+    console.log("[Victory] Block counted locally for domain:", domain);
 
-    console.log("[Victory] Auth state - uid:", uid, "firebaseUid:", firebaseUid, "deviceId:", deviceId);
-
-    const effectiveUid = firebaseUid;
-
-if (!effectiveUid) {
-  console.warn("[Victory] No authenticated Firebase UID");
-  return;
-}
-    if (!effectiveUid || !deviceId) {
-      console.warn("[Victory] Missing uid or deviceId, skipping log");
-      return;
-    }
-
-    const displayName = sanitizeString(userName) || (userEmail ? userEmail.split("@")[0] : "unknown");
-    const first = displayName.split(" ")[0];
-    const message = `${sanitizeString(first)} attempted to visit a restricted site at ${new Date().toLocaleTimeString()}`;
-
-    const logEntry = {
-      uid: effectiveUid,
-      deviceId: deviceId,
-      partnerUid: "",
-      domainHash: domainHash,
-      domain: domain.substring(0, 100),
-      userEmail: sanitizeString(userEmail) || "",
-      userName: displayName,
-      message: message,
-      createdAt: new Date().toISOString(),
-      timestamp: now
-    };
-
-    console.log("[Victory] Prepared log entry with fields:", Object.keys(logEntry));
-
-    if (partnerUids.length === 0) {
-      console.log("[Victory] No partners, writing single log");
-      try {
-        await addToOfflineQueue(logEntry);
-
-processOfflineQueue();
-        console.log("[Victory] Single log write complete");
-      } catch (err) {
-        console.log("[Victory] Single log failed (may be queued):", err.message);
-      }
-    } else {
-      console.log("[Victory] Writing logs for", partnerUids.length, "partners");
-      for (const partnerUid of partnerUids) {
-        const partnerLog = { ...logEntry, partnerUid };
-        try {
-          await addToOfflineQueue(partnerLog);
-
-processOfflineQueue();
-          console.log("[Victory] Partner log written for:", partnerUid);
-        } catch (err) {
-          console.log("[Victory] Partner log failed (may be queued):", err.message);
-        }
-      }
-    }
-
-    console.log("[Victory] logBlockedVisit complete");
   } catch (err) {
-    console.error("[Victory] logBlockedVisit outer catch:", err);
+    console.error("[Victory] logBlockedVisit error:", err);
   }
 }
-
 /* =========================
    MESSAGE LISTENER
 ========================= */
@@ -1116,7 +1175,7 @@ async function showEncouragement() {
 
     chrome.notifications.create({
         type: "basic",
-        iconUrl: "/Img/icons/icon-192x192.png",
+        iconUrl: "icon/icon-192x192.png",
         title: "Victory",
         message
     });
@@ -1233,5 +1292,7 @@ loadBlockedSites();
 startOfflineRetryLoop();
 
 startNotificationScheduler();
+
+startBatchScheduler();
 
 console.log("[Victory] background ready");

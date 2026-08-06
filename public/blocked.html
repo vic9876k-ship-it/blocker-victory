@@ -140,6 +140,145 @@
       font-size:11px;
       opacity:.6;
     }
+
+    /* ===== NEW: Interactive Layer Styles ===== */
+    #intervention-area{
+      margin-top:15px;
+    }
+
+    .victory-btn{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:bold;
+      font-size:14px;
+      margin-top:8px;
+      transition:all 0.2s;
+      border:none;
+      font-family:inherit;
+    }
+
+    .victory-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .victory-btn:active{
+      transform:translateY(0);
+    }
+
+    .btn-primary{
+      background:linear-gradient(90deg,#2f6bff,#1f4fd6);
+      color:white;
+    }
+
+    .btn-secondary{
+      background:rgba(255,255,255,0.08);
+      color:#a9c4ff;
+      border:1px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-calm{
+      background:rgba(34,197,94,0.15);
+      color:#dfffe8;
+      border:1px solid rgba(34,197,94,0.3);
+    }
+
+    .btn-danger{
+      background:#dc2626;
+      color:white;
+    }
+
+    .btn-ghost-red{
+      background:transparent;
+      color:#fca5a5;
+      border:1px solid rgba(239,68,68,0.3);
+    }
+
+    /* Breath animation */
+    .breath-circle{
+      width:90px;
+      height:90px;
+      border-radius:50%;
+      border:3px solid #818cf8;
+      margin:0 auto 15px;
+      animation:breathe 8s infinite ease-in-out;
+    }
+
+    @keyframes breathe{
+      0%,100%{ transform:scale(1); opacity:0.5; }
+      50%{ transform:scale(1.5); opacity:1; }
+    }
+
+    /* Surf graph */
+    #surf-svg{
+      width:100%;
+      height:130px;
+      background:rgba(0,0,0,0.2);
+      border-radius:10px;
+      margin:10px 0;
+    }
+
+    .surf-num-btn{
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      border:1px solid rgba(96,165,250,0.4);
+      background:rgba(96,165,250,0.1);
+      color:#60a5fa;
+      cursor:pointer;
+      font-weight:bold;
+      font-size:12px;
+      transition:0.2s;
+    }
+
+    .surf-num-btn:hover:not(:disabled){
+      background:rgba(96,165,250,0.3);
+      transform:scale(1.1);
+    }
+
+    .surf-num-btn:disabled{
+      opacity:0.3;
+      cursor:not-allowed;
+    }
+
+    /* Bridge overlay */
+    #bridge-overlay{
+      position:absolute;
+      top:0; left:0; right:0; bottom:0;
+      background:rgba(5,11,31,0.95);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      border-radius:18px;
+      z-index:10;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    textarea{
+      width:100%;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.15);
+      color:white;
+      padding:10px;
+      border-radius:8px;
+      font-family:inherit;
+      font-size:13px;
+      resize:none;
+      margin-top:8px;
+    }
+
+    .scripture-tag{
+      font-size:11px;
+      opacity:0.7;
+      margin-top:6px;
+      font-style:italic;
+    }
   </style>
 </head>
 
@@ -162,8 +301,19 @@
       Access has been restricted to help maintain safe browsing habits.
     </p>
 
-    <div class="encouragement">
+    <div class="encouragement" id="encouragement-box">
       Focus on feeding on the Word of God. Strength grows where attention goes.
+    </div>
+
+    <!-- NEW: Dynamic intervention injection point -->
+    <div id="intervention-area"></div>
+
+    <!-- Bridge mode overlay (injected by JS when needed) -->
+    <div id="bridge-overlay" class="hidden">
+      <div class="breath-circle"></div>
+      <h2 style="margin-bottom:8px;">Be Still</h2>
+      <p id="bridge-scripture" style="color:#a9c4ff; font-size:13px; max-width:80%;"></p>
+      <p style="color:#d6e2ff; opacity:0.6; font-size:12px; margin-top:10px;">Your mind returns in <span id="bridge-timer" style="color:#60a5fa; font-weight:bold;">90</span> seconds</p>
     </div>
 
     <div class="divider"></div>

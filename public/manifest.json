@@ -1,6 +1,7 @@
 {
 "manifest_version": 3,
 "name": "Victory - Safe Browsing & Accountability",
+"description": "An Accountability tool designed to support users to reduce compulsive porn consumption and improve digital wellbeing",
 "version": "1.0",
 "permissions": [
 "tabs",
