@@ -17,7 +17,7 @@ onAuthStateChanged(auth, (user) => {
   const emailEl = document.getElementById("user-email");
 
   if (nameEl) {
-    nameEl.textContent = user.displayName || "Victory User";
+    nameEl.textContent = user.displayName || "LaviX User";
   }
 
   if (emailEl) {

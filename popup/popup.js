@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("signOutBtn");
   const status = document.getElementById("status");
   const pairingEl = document.getElementById("pairingCode");
-  
+
   const expiryEl = document.getElementById("expiry");
 
   console.log({
@@ -42,14 +42,14 @@ if (!loginBtn || !logoutBtn || !status || !pairingEl || !expiryEl) {
     const displayName =
     document.getElementById("displayName").value.trim();
 
-  
+
 
     if (res.pairingExpiresAt) {
       const remaining = Math.max(0, res.pairingExpiresAt - Date.now());
       expiryEl.textContent = `Expires in ${Math.floor(remaining / 60000)} min`;
     }
   });
-  
+
   // ==================== LOGIN ====================
   loginBtn.addEventListener("click", () => {
     status.textContent = "Signing in with Google...";
@@ -101,8 +101,49 @@ chrome.storage.local.set(
         expiryEl.textContent = "";
       } else {
         status.textContent = "Logout failed";
-        console.error("[Victory] Logout failed:", res?.error);
+        console.error("[LaviX] Logout failed:", res?.error);
       }
     });
   });
+
+  // ==================== INCOGNITO PROTECTION CHECK ====================
+  const incognitoStatus = document.getElementById("incognitoStatus");
+  const incognitoGuide = document.getElementById("incognitoGuide");
+  const incognitoIcon = document.getElementById("incognitoIcon");
+  const enableIncognitoBtn = document.getElementById("enableIncognitoBtn");
+
+  if (typeof chrome !== "undefined" && chrome.extension && chrome.extension.isAllowedIncognitoAccess) {
+    chrome.extension.isAllowedIncognitoAccess((allowed) => {
+      if (!incognitoStatus || !incognitoGuide || !incognitoIcon) return;
+
+      if (allowed) {
+        // Enabled — green, compact
+        incognitoStatus.textContent = "Incognito protection enabled";
+        incognitoStatus.style.color = "#22c55e";
+        incognitoIcon.style.stroke = "#22c55e";
+        incognitoGuide.style.display = "none";
+      } else {
+        // Disabled — red alert, show guide
+        incognitoStatus.textContent = "Incognito protection OFF";
+        incognitoStatus.style.color = "#ef4444";
+        incognitoIcon.style.stroke = "#ef4444";
+        incognitoGuide.style.display = "block";
+        // Change icon to alert circle
+        incognitoIcon.innerHTML = `
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" x2="12" y1="8" y2="12"/>
+          <line x1="12" x2="12.01" y1="16" y2="16"/>
+        `;
+      }
+    });
+  }
+
+  // Open Chrome extensions settings when user clicks enable button
+  if (enableIncognitoBtn) {
+    enableIncognitoBtn.addEventListener("click", () => {
+      if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id) {
+        chrome.tabs.create({ url: "chrome://extensions/?id=" + chrome.runtime.id });
+      }
+    });
+  }
 });

@@ -65,8 +65,6 @@ const ENCOURAGEMENT_MESSAGES = [
 
 "Don't trade long-term peace for short-term pleasure.",
 
-"Take a short walk. Drink some water. Reset your mind.",
-
 "You've overcome every difficult day you've faced so far."
 
 ];
