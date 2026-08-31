@@ -172,6 +172,44 @@
       padding-top: 20px;
     }
 
+    /* Platform comparison table */
+    .platform-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 14px;
+    }
+
+    .platform-table th,
+    .platform-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+
+    .platform-table th {
+      background: rgba(96, 165, 250, 0.1);
+      color: #f9fafb;
+      font-weight: 600;
+    }
+
+    .platform-table td {
+      background: rgba(17, 24, 39, 0.5);
+    }
+
+    .platform-table tr:nth-child(even) td {
+      background: rgba(17, 24, 39, 0.7);
+    }
+
+    .check {
+      color: #4ade80;
+      font-weight: 600;
+    }
+
+    .cross {
+      color: #9ca3af;
+    }
+
     @media (max-width: 600px) {
       .container {
         width: min(100% - 20px, 900px);
@@ -186,8 +224,18 @@
       h2 {
         font-size: 20px;
       }
+
+      .platform-table {
+        font-size: 13px;
+      }
+
+      .platform-table th,
+      .platform-table td {
+        padding: 8px 10px;
+      }
     }
   </style>
+<base target="_blank">
 </head>
 
 <body>
@@ -195,7 +243,6 @@
   <main class="container">
 
     <header>
-      <!-- Change this path if your privacy page uses a different icon location -->
       <img
         src="public/Icons/android-chrome-192x192.png"
         alt="LaviX"
@@ -218,15 +265,17 @@
       <h2>1. Introduction</h2>
 
       <p>
-        LaviX ("LaviX", "we", "our", or "us") is a Chrome extension
-        designed to provide safe-browsing controls and optional
-        accountability features.
+        LaviX ("LaviX", "we", "our", or "us") provides safe-browsing,
+        content-blocking, and accountability features through applications
+        and services including the <strong>LaviX Chrome Extension</strong> and
+        the <strong>LaviX Android application</strong>.
       </p>
 
       <p>
-        This Privacy Policy explains what information LaviX processes,
-        why it is processed, how it is stored, and the choices available
-        to users.
+        This Privacy Policy applies to LaviX across all supported platforms.
+        Because different platforms provide different technical capabilities,
+        some data processing may differ depending on the device, operating
+        system, permissions granted, and features being used.
       </p>
 
       <p>
@@ -240,7 +289,7 @@
       <h2>2. Information We Collect</h2>
 
       <p>
-        Depending on the features you use, LaviX may process the
+        Depending on the platform and features you use, LaviX may process the
         following information:
       </p>
 
@@ -273,15 +322,15 @@
         </li>
       </ul>
 
-      <h3>Blocked-Visit Information</h3>
+      <h3>Blocked-Activity Information</h3>
 
       <p>
-        When LaviX blocks a website, the extension may record an event
-        containing:
+        When LaviX blocks or restricts access to content, the application may
+        record an event containing:
       </p>
 
       <ul>
-        <li>The domain associated with the blocked visit.</li>
+        <li>The domain or activity type associated with the blocked event.</li>
         <li>The time at which the blocked event occurred.</li>
       </ul>
 
@@ -289,18 +338,88 @@
         <strong>Important:</strong>
         LaviX does not intentionally collect the contents of webpages,
         passwords, form submissions, messages, or payment information
-        from websites you visit.
+        from websites or applications you use.
       </div>
     </section>
 
 
     <section>
-      <h2>3. Information Stored Locally</h2>
+      <h2>3. Platform-Specific Data Processing</h2>
 
       <p>
-        Some LaviX functionality operates locally within the browser.
-        Information used by the intervention system may be stored in
-        browser storage rather than being transmitted to our servers.
+        Although the Chrome Extension and Android App are designed to provide
+        similar safe-browsing and accountability functionality, the technical
+        implementation differs by platform. The table below describes what
+        each platform processes:
+      </p>
+
+      <table class="platform-table">
+        <thead>
+          <tr>
+            <th>Function</th>
+            <th>Chrome Extension</th>
+            <th>Android App</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Google authentication</td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Account email / display name</td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Device pairing</td>
+            <td><span class="check">Yes</span></td>
+            <td><span class="check">Yes</span></td>
+          </tr>
+          <tr>
+            <td>Blocked activity logging</td>
+            <td>Blocked domain + timestamp</td>
+            <td>Blocked activity detected by Android implementation</td>
+          </tr>
+          <tr>
+            <td>Local storage</td>
+            <td>Chrome / browser storage</td>
+            <td>Android local / app storage</td>
+          </tr>
+          <tr>
+            <td>Cloud synchronization</td>
+            <td><span class="check">Firebase / Firestore</span></td>
+            <td><span class="check">Firebase / Firestore</span></td>
+          </tr>
+          <tr>
+            <td>Notifications</td>
+            <td>Chrome notifications</td>
+            <td>Android notifications</td>
+          </tr>
+          <tr>
+            <td>Incognito protection</td>
+            <td><span class="check">Chrome-specific</span></td>
+            <td><span class="cross">Not applicable</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Depending on the platform and features enabled, LaviX may process
+        information about blocked or restricted activity, including domain
+        information and the time an event occurred.
+      </p>
+    </section>
+
+
+    <section>
+      <h2>4. Information Stored Locally</h2>
+
+      <p>
+        Some LaviX functionality operates locally within the browser or device.
+        Information used by the intervention system may be stored in local
+        storage rather than being transmitted to our servers.
       </p>
 
       <p>
@@ -315,13 +434,20 @@
 
       <p>
         These local records are used to provide the intervention and
-        accountability experience within the extension.
+        accountability experience within the application.
       </p>
+
+      <div class="highlight">
+        <strong>Platform note:</strong> On the Chrome Extension, local data is
+        stored using the browser's extension storage APIs. On the Android App,
+        local data is stored using Android's internal app storage mechanisms.
+        Clearing browser data or uninstalling the app will remove local records.
+      </div>
     </section>
 
 
     <section>
-      <h2>4. How We Use Information</h2>
+      <h2>5. How We Use Information</h2>
 
       <p>
         Information processed by LaviX is used for purposes such as:
@@ -329,7 +455,7 @@
 
       <ul>
         <li>Providing safe-browsing and blocking functionality.</li>
-        <li>Recording blocked-visit events for accountability features.</li>
+        <li>Recording blocked-activity events for accountability features.</li>
         <li>Connecting devices through the pairing system.</li>
         <li>Displaying account and pairing status.</li>
         <li>Providing notifications and accountability-related features.</li>
@@ -344,7 +470,7 @@
 
 
     <section>
-      <h2>5. Google Sign-In</h2>
+      <h2>6. Google Sign-In</h2>
 
       <p>
         LaviX uses Google authentication to allow users to sign in.
@@ -367,7 +493,7 @@
 
 
     <section>
-      <h2>6. Data Storage and Third-Party Services</h2>
+      <h2>7. Data Storage and Third-Party Services</h2>
 
       <p>
         LaviX uses Firebase services to support authentication and
@@ -389,22 +515,22 @@
 
 
     <section>
-      <h2>7. Browsing Activity</h2>
+      <h2>8. Browsing and Activity Monitoring</h2>
 
       <p>
-        LaviX is a browser protection extension and therefore needs to
-        interact with browser requests in order to determine whether
-        a requested domain should be blocked.
+        LaviX is a safe-browsing protection tool and therefore needs to
+        interact with browser requests or device activity in order to determine
+        whether access to a domain or application should be blocked.
       </p>
 
       <p>
-        LaviX may record the domain and timestamp of a blocked visit
-        when the blocking intervention is displayed.
+        LaviX may record the domain and timestamp of a blocked visit or
+        restricted activity when the blocking intervention is displayed.
       </p>
 
       <div class="highlight">
         <strong>We do not intentionally collect your complete browsing
-        history.</strong>
+        history or app usage history.</strong>
         The accountability logging functionality is limited to
         blocked-visit events required by the application's features.
       </div>
@@ -412,17 +538,17 @@
       <p>
         LaviX does not intentionally collect the content of pages,
         search queries, passwords, payment information, or communications
-        entered into unrelated websites.
+        entered into unrelated websites or applications.
       </p>
     </section>
 
 
     <section>
-      <h2>8. Incognito Mode</h2>
+      <h2>9. Incognito Mode (Chrome Extension)</h2>
 
       <p>
-        LaviX can operate with Chrome's Incognito mode when the user
-        explicitly allows the extension to run in Incognito windows.
+        The LaviX Chrome Extension can operate with Chrome's Incognito mode
+        when the user explicitly allows the extension to run in Incognito windows.
       </p>
 
       <p>
@@ -434,11 +560,17 @@
         LaviX does not enable Incognito access automatically without
         Chrome's permission system.
       </p>
+
+      <div class="highlight">
+        <strong>Note:</strong> Incognito mode is specific to the Chrome
+        Extension. The Android App does not have an equivalent Incognito
+        protection feature.
+      </div>
     </section>
 
 
     <section>
-      <h2>9. Data Sharing</h2>
+      <h2>10. Data Sharing</h2>
 
       <p>
         We do not sell, rent, or trade user personal information.
@@ -458,7 +590,7 @@
 
 
     <section>
-      <h2>10. Data Security</h2>
+      <h2>11. Data Security</h2>
 
       <p>
         We use reasonable technical and organizational measures designed
@@ -476,7 +608,7 @@
 
 
     <section>
-      <h2>11. Data Retention</h2>
+      <h2>12. Data Retention</h2>
 
       <p>
         We retain information only for as long as reasonably necessary
@@ -485,18 +617,18 @@
       </p>
 
       <p>
-        Local information stored by the extension remains under the
-        browser's local storage mechanisms and may be removed when the
-        relevant storage is cleared or the extension is removed.
+        Local information stored by the application remains under the
+        device's local storage mechanisms and may be removed when the
+        relevant storage is cleared or the application is removed.
       </p>
     </section>
 
 
     <section>
-      <h2>12. Account and Data Deletion</h2>
+      <h2>13. Account and Data Deletion</h2>
 
       <p>
-        Users may sign out of LaviX through the extension.
+        Users may sign out of LaviX through the application.
       </p>
 
       <p>
@@ -513,7 +645,7 @@
 
 
     <section>
-      <h2>13. Children's Privacy</h2>
+      <h2>14. Children's Privacy</h2>
 
       <p>
         LaviX is intended to provide safe-browsing and accountability
@@ -530,7 +662,7 @@
 
 
     <section>
-      <h2>14. Changes to This Privacy Policy</h2>
+      <h2>15. Changes to This Privacy Policy</h2>
 
       <p>
         We may update this Privacy Policy when LaviX's functionality,
@@ -545,36 +677,37 @@
 
 
     <section>
-      <h2>15. Contact</h2>
+      <h2>16. Contact</h2>
 
       <p>
         If you have questions about this Privacy Policy or LaviX's
         handling of information, please contact us through the official
-        LaviX/Purpose Partner support channel associated with the service.
+        LaviX / Purpose Partner support channel associated with the service.
       </p>
     </section>
 
 
     <section>
-      <h2>16. Summary</h2>
+      <h2>17. Summary</h2>
 
       <div class="highlight">
         <ul>
           <li>LaviX uses Google Sign-In for authentication.</li>
           <li>LaviX may process your email address and chosen display name.</li>
           <li>LaviX may process temporary pairing information.</li>
-          <li>LaviX may record the domain and timestamp of blocked visits.</li>
-          <li>Some intervention information is stored locally in your browser.</li>
+          <li>LaviX may record the domain and timestamp of blocked visits or restricted activity.</li>
+          <li>Some intervention information is stored locally on your device or browser.</li>
           <li>LaviX does not sell personal information.</li>
           <li>LaviX does not intentionally collect webpage contents, passwords, or payment information.</li>
-          <li>LaviX does not intentionally collect a complete browsing history.</li>
+          <li>LaviX does not intentionally collect a complete browsing or app usage history.</li>
+          <li>Data practices may differ slightly between the Chrome Extension and Android App.</li>
         </ul>
       </div>
     </section>
 
 
     <footer>
-      © 2026 LaviX. All rights reserved.
+      &copy; 2026 LaviX. All rights reserved.
     </footer>
 
   </main>
