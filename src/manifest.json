@@ -9,8 +9,7 @@
     "identity",
     "alarms",
     "notifications",
-    "declarativeNetRequest",
-    "webNavigation"
+    "declarativeNetRequest"
   ],
 
   "oauth2": {
@@ -23,10 +22,7 @@
   },
 
   "host_permissions": [
-    "<all_urls>",
-    "https://firestore.googleapis.com/*",
-    "https://identitytoolkit.googleapis.com/*",
-    "https://securetoken.googleapis.com/*"
+    "<all_urls>"
   ],
 
   "background": {
@@ -54,29 +50,25 @@
       "resources": [
         "sites.json",
         "blocked.html",
-        "blocked.js",
-        "popup/popup.html",
-       "popup/popupp.html",
-        "popup/popup.js"
-             ],
+        "blocked.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ],
 
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "lavix_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+
   "externally_connectable": {
     "matches": [
-      "http://localhost:5173/*",
-      "http://localhost:4173/*",
-      "https://victory-fb944.firebaseapp.com/*"
-    ],
-    "declarative_net_request": {
-  "rule_resources": [
-    {
-      "id": "victory_rules",
-      "enabled": true,
-      "path": "rules.json"
-    }
-  ]
-}
+      "https://purpose-partner.org/*"
+    ]
   }
 }

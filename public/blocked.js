@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   try {
     displayDomain = new URL(blockedUrl).hostname.replace(/^www\./, "");
   } catch (err) {
-    console.warn("[Victory] Failed to parse URL:", blockedUrl);
+    console.warn("[LaviX] Failed to parse URL:", blockedUrl);
   }
 
   const domainEl = document.getElementById("domain");
@@ -30,38 +30,38 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       (response) => {
         if (chrome.runtime.lastError) {
-          console.error("[Victory] Log failed:", chrome.runtime.lastError.message);
+          console.error("[LaviX] Log failed:", chrome.runtime.lastError.message);
           return;
         }
-        console.log("[Victory] Log response:", response);
+        console.log("[LaviX] Log response:", response);
       }
     );
   } catch (e) {
-    console.error("[Victory] Failed to log blocked visit:", e);
+    console.error("[LaviX] Failed to log blocked visit:", e);
   }
 
   /* =========================
      3. LOCAL TRIGGER ENGINE
   ========================= */
   function logTrigger() {
-    const triggers = JSON.parse(localStorage.getItem('victory_triggers') || '[]');
+    const triggers = JSON.parse(localStorage.getItem('lavix_triggers') || '[]');
     triggers.push(Date.now());
     if (triggers.length > 100) triggers.shift();
-    localStorage.setItem('victory_triggers', JSON.stringify(triggers));
+    localStorage.setItem('lavix_triggers', JSON.stringify(triggers));
   }
 
   function getTriggers() {
-    return JSON.parse(localStorage.getItem('victory_triggers') || '[]');
+    return JSON.parse(localStorage.getItem('lavix_triggers') || '[]');
   }
 
   function hasRecentBypass() {
-    const last = localStorage.getItem('victory_last_bypass');
+    const last = localStorage.getItem('lavix_last_bypass');
     if (!last) return false;
     return (Date.now() - parseInt(last)) < 24 * 60 * 60 * 1000;
   }
 
   function setBypassFlag() {
-    localStorage.setItem('victory_last_bypass', Date.now().toString());
+    localStorage.setItem('lavix_last_bypass', Date.now().toString());
   }
 
   function getRiskScore() {
@@ -214,9 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = document.getElementById('thought-input').value.trim();
       if (!text) return;
 
-      const thoughts = JSON.parse(localStorage.getItem('victory_thoughts') || '[]');
+      const thoughts = JSON.parse(localStorage.getItem('lavix_thoughts') || '[]');
       thoughts.push({ text, time: Date.now() });
-      localStorage.setItem('victory_thoughts', JSON.stringify(thoughts.slice(-50)));
+      localStorage.setItem('lavix_thoughts', JSON.stringify(thoughts.slice(-50)));
 
       interventionArea.innerHTML = `
         <div style="padding:15px; color:#dfffe8;">

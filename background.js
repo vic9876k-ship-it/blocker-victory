@@ -33,18 +33,19 @@ const SAFE_DOMAINS = [
 
 const MAX_LOGS_PER_MINUTE = 30;
 const BATCH_INTERVAL_MS = 2 * 60 * 1000;
-const BATCH_ALARM_NAME = "victoryBatchSummary";
-const HEARTBEAT_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const BATCH_ALARM_NAME = "lavixBatchSummary";
+const HEARTBEAT_ALARM_NAME = "lavixHeartbeat";
+const HEARTBEAT_INTERVAL_MINUTES = 120; // 2 hours
 const MAX_HEARTBEAT_RETRIES = 3;
 const MAX_URL_LENGTH = 2048;
 const MAX_MESSAGE_LENGTH = 500;
 const OFFLINE_QUEUE_MAX = 50;
-const OFFLINE_RETRY_INTERVAL_MS = 10 * 1000;
+const OFFLINE_RETRY_INTERVAL_MS = 60 * 60 * 1000;
 /* =========================
    ENCOURAGEMENT SETTINGS
 ========================= */
 
-const ENCOURAGEMENT_ALARM = "victoryEncouragement";
+const ENCOURAGEMENT_ALARM = "lavixEncouragement";
 const ENCOURAGEMENT_INTERVAL_MINUTES = 120; // 2 hours
 
 const ENCOURAGEMENT_MESSAGES = [
@@ -73,13 +74,28 @@ let globalLogTimestamps = [];
 let isProcessingQueue = false; // NEW: prevents concurrent batch runs
 let isWritingBatch = false;  // prevents overlapping batch writes
 let heartbeatRetryCount = 0;
-let heartbeatTimer = null;
 let offlineRetryTimer = null;
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === BATCH_ALARM_NAME) {
-        writeBatchSummary();
-    }
+
+  if (alarm.name === BATCH_ALARM_NAME) {
+    console.log("[LaviX] Batch alarm fired");
+    writeBatchSummary();
+    return;
+  }
+
+  if (alarm.name === HEARTBEAT_ALARM_NAME) {
+    console.log("[LaviX] Heartbeat alarm fired");
+    writeHeartbeat();
+    return;
+  }
+
+  if (alarm.name === ENCOURAGEMENT_ALARM) {
+    console.log("[LaviX] Encouragement alarm fired");
+    showEncouragement();
+    return;
+  }
+
 });
 
 function startBatchScheduler() {
@@ -110,7 +126,7 @@ async function resetBlockCount() {
 async function writeBatchSummary() {
   // Guard #1: don't run two batches at once
   if (isWritingBatch) {
-    console.log("[Victory] Batch already running");
+    console.log("[LaviX] Batch already running");
     return;
   }
 
@@ -120,7 +136,7 @@ async function writeBatchSummary() {
     // Guard #2: if no blocks happened, DO NOT touch Firestore at all
     const count = await getBlockCount();
     if (count === 0) {
-      console.log("[Victory] No blocks to summarize — skipping Firestore");
+      console.log("[LaviX] No blocks to summarize — skipping Firestore");
       return;
     }
 
@@ -140,7 +156,7 @@ async function writeBatchSummary() {
 
     const effectiveUid = firebaseUid || uid;
     if (!effectiveUid || !deviceId) {
-      console.warn("[Victory] Missing uid/deviceId for batch summary");
+      console.warn("[LaviX] Missing uid/deviceId for batch summary");
       return;
     }
 
@@ -184,10 +200,10 @@ async function writeBatchSummary() {
 
     // Only reset the counter after successful queueing + flush
     await resetBlockCount();
-    console.log("[Victory] Batch summary sent. Count was:", count);
+    console.log("[LaviX] Batch summary sent. Count was:", count);
 
   } catch (err) {
-    console.error("[Victory] writeBatchSummary failed:", err);
+    console.error("[LaviX] writeBatchSummary failed:", err);
     // If anything fails, DO NOT reset the counter so it retries next cycle
   } finally {
     isWritingBatch = false;
@@ -216,7 +232,7 @@ async function addToOfflineQueue(logEntry) {
   }
   
   await chrome.storage.local.set({ offlineQueue: queue });
-  console.log("[Victory] Queued offline log. Queue size:", queue.length);
+  console.log("[LaviX] Queued offline log. Queue size:", queue.length);
 }
 
 async function clearOfflineQueue() {
@@ -228,7 +244,7 @@ async function clearOfflineQueue() {
 async function processOfflineQueue() {
   // GUARD #1: Already running
   if (isProcessingQueue) {
-    console.log("[Victory] Queue processing already in progress, skipping");
+    console.log("[LaviX] Queue processing already in progress, skipping");
     return;
   }
   
@@ -236,12 +252,12 @@ async function processOfflineQueue() {
   
   // GUARD #2: Nothing to send = zero Firestore writes
   if (queue.length === 0) {
-    console.log("[Victory] Offline queue empty, no Firestore write needed");
+    console.log("[LaviX] Offline queue empty, no Firestore write needed");
     return;
   }
   
   isProcessingQueue = true;
-  console.log("[Victory] Processing offline queue:", queue.length);
+  console.log("[LaviX] Processing offline queue:", queue.length);
   
   try {
     const successfulIds = new Set(); // NEW: track by ID, not object reference
@@ -252,7 +268,7 @@ async function processOfflineQueue() {
         if (entry.entryId) successfulIds.add(entry.entryId);
         else successfulIds.add(entry.timestamp); // fallback
       } catch (err) {
-        console.warn("[Victory] Failed to send queued log:", err.message);
+        console.warn("[LaviX] Failed to send queued log:", err.message);
         break; // Stop on first failure, retry later
       }
     }
@@ -265,7 +281,7 @@ async function processOfflineQueue() {
     
     await chrome.storage.local.set({ offlineQueue: remaining });
     
-    console.log("[Victory] Sent", successfulIds.size, "queued logs,", remaining.length, "remaining");
+    console.log("[LaviX] Sent", successfulIds.size, "queued logs,", remaining.length, "remaining");
   } finally {
     isProcessingQueue = false; // RELEASE lock regardless of outcome
   }
@@ -300,11 +316,11 @@ async function loadBlockedSites() {
       Array.isArray(json.blocked) ? json.blocked :
       [];
 
-    console.log("[Victory] sites loaded:", blockedSites.length);
+    console.log("[LaviX] sites loaded:", blockedSites.length);
 
     await updateDNRRules();
   } catch (err) {
-    console.error("[Victory] failed to load sites.json", err);
+    console.error("[LaviX] failed to load sites.json", err);
   }
 }
 
@@ -330,7 +346,7 @@ function buildRules(sites) {
       );
 
       if (isProtected) {
-        console.warn("[Victory] skipped protected domain:", clean);
+        console.warn("[LaviX] skipped protected domain:", clean);
         return null;
       }
 
@@ -355,7 +371,7 @@ function buildRules(sites) {
 async function updateDNRRules() {
   try {
     if (!chrome.declarativeNetRequest) {
-      console.error("[Victory] DNR not available");
+      console.error("[LaviX] DNR not available");
       return;
     }
 
@@ -368,9 +384,9 @@ async function updateDNRRules() {
       addRules: rules
     });
 
-    console.log("[Victory] DNR rules updated:", rules.length);
+    console.log("[LaviX] DNR rules updated:", rules.length);
   } catch (err) {
-    console.error("[Victory] DNR update failed", err);
+    console.error("[LaviX] DNR update failed", err);
   }
 }
 
@@ -415,7 +431,7 @@ async function exchangeGoogleTokenForFirebase(googleAccessToken) {
       registered: data.registered || false
     };
   } catch (e) {
-    console.error("[Victory] Firebase auth exchange failed", e);
+    console.error("[LaviX] Firebase auth exchange failed", e);
     throw e;
   }
 }
@@ -445,44 +461,78 @@ async function refreshFirebaseToken(refreshToken) {
       userId: data.user_id
     };
   } catch (e) {
-    console.error("[Victory] token refresh failed", e);
+    console.error("[LaviX] token refresh failed", e);
     throw e;
   }
 }
 
 async function getValidFirebaseToken() {
-  const { firebaseIdToken, firebaseRefreshToken, firebaseTokenExpiry } = await chrome.storage.local.get([
-    "firebaseIdToken",
-    "firebaseRefreshToken",
-    "firebaseTokenExpiry"
-  ]);
+    const {
+        firebaseIdToken,
+        firebaseRefreshToken,
+        firebaseTokenExpiry
+    } = await chrome.storage.local.get([
+        "firebaseIdToken",
+        "firebaseRefreshToken",
+        "firebaseTokenExpiry"
+    ]);
 
-  const now = Date.now();
+    const now = Date.now();
 
-  if (firebaseIdToken && firebaseTokenExpiry && now < firebaseTokenExpiry - 5 * 60 * 1000) {
-    return firebaseIdToken;
-  }
-
-  if (firebaseRefreshToken) {
-    try {
-      const refreshed = await refreshFirebaseToken(firebaseRefreshToken);
-      const expiry = now + (parseInt(refreshed.expiresIn) * 1000);
-
-      await chrome.storage.local.set({
-        firebaseIdToken: refreshed.idToken,
-        firebaseRefreshToken: refreshed.refreshToken,
-        firebaseTokenExpiry: expiry
-      });
-
-      return refreshed.idToken;
-    } catch (e) {
-      console.error("[Victory] failed to refresh token, need re-login", e);
-      await chrome.storage.local.remove(["firebaseIdToken", "firebaseRefreshToken", "firebaseTokenExpiry"]);
-      throw new Error("Session expired. Please log in.");
+    if (
+        firebaseIdToken &&
+        firebaseTokenExpiry &&
+        now < firebaseTokenExpiry - 300 * 1e3
+    ) {
+        return firebaseIdToken;
     }
-  }
 
-  throw new Error("No valid Firebase token available. Please log in.");
+    if (firebaseRefreshToken) {
+        try {
+            const refreshed = await refreshFirebaseToken(firebaseRefreshToken);
+
+            const expiry =
+                now + parseInt(refreshed.expiresIn) * 1e3;
+
+            await chrome.storage.local.set({
+                firebaseIdToken: refreshed.idToken,
+                firebaseRefreshToken: refreshed.refreshToken,
+                firebaseTokenExpiry: expiry
+            });
+
+            return refreshed.idToken;
+
+        } catch (e) {
+            console.warn(
+                "[LaviX] Token refresh failed:",
+                e?.message || e
+            );
+
+            // Network failure: DO NOT delete the refresh token.
+            if (
+                !navigator.onLine ||
+                e?.message === "Failed to fetch"
+            ) {
+                console.warn(
+                    "[LaviX] Network unavailable. Keeping refresh token."
+                );
+                throw e;
+            }
+
+            // Firebase actually rejected the refresh token.
+            await chrome.storage.local.remove([
+                "firebaseIdToken",
+                "firebaseRefreshToken",
+                "firebaseTokenExpiry"
+            ]);
+
+            throw new Error("Session expired. Please log in.");
+        }
+    }
+
+    throw new Error(
+        "No valid Firebase token available. Please log in."
+    );
 }
 
 /* =========================
@@ -526,10 +576,10 @@ function sanitizeDomain(domain) {
 ========================= */
 async function firestoreWrite(collectionPath, data, allowOffline = true) {
   try {
-    console.log("[Victory] Attempting Firestore write to", collectionPath);
+    console.log("[LaviX] Attempting Firestore write to", collectionPath);
     
     const firebaseIdToken = await getValidFirebaseToken();
-    console.log("[Victory] Got valid token");
+    console.log("[LaviX] Got valid token");
 
     const documentId = crypto.randomUUID();
     const url = `${FIRESTORE_REST_API}/projects/${firebaseConfig.projectId}/databases/(default)/documents/${collectionPath}?documentId=${documentId}`;
@@ -551,7 +601,7 @@ async function firestoreWrite(collectionPath, data, allowOffline = true) {
       }
     }
 
-    console.log("[Victory] Payload fields:", Object.keys(sanitizedData));
+    console.log("[LaviX] Payload fields:", Object.keys(sanitizedData));
 
     const res = await fetch(url, {
       method: "POST",
@@ -575,22 +625,22 @@ async function firestoreWrite(collectionPath, data, allowOffline = true) {
       })
     });
 
-    console.log("[Victory] Response status:", res.status);
+    console.log("[LaviX] Response status:", res.status);
 
     if (!res.ok) {
       const err = await res.json();
-      console.error("[Victory] Firestore error response:", JSON.stringify(err));
+      console.error("[LaviX] Firestore error response:", JSON.stringify(err));
       throw new Error(err.error?.message || `Firestore write failed: ${res.status}`);
     }
 
     const result = await res.json();
-    console.log("[Victory] Firestore write SUCCESS, doc:", result.name?.split("/").pop());
+    console.log("[LaviX] Firestore write SUCCESS, doc:", result.name?.split("/").pop());
     return result;
   } catch (err) {
-    console.error("[Victory] Firestore write FAILED:", err.message);
+    console.error("[LaviX] Firestore write FAILED:", err.message);
     
     if (allowOffline) {
-      console.log("[Victory] Queuing for offline retry");
+      console.log("[LaviX] Queuing for offline retry");
       await addToOfflineQueue(data);
     }
     throw err;
@@ -653,7 +703,7 @@ async function firestoreUpdate(docPath, data) {
 
     return res.json();
   } catch (err) {
-    console.error("[Victory] firestoreUpdate FAILED:", err.message);
+    console.error("[LaviX] firestoreUpdate FAILED:", err.message);
     throw err;
   }
 }
@@ -680,7 +730,7 @@ async function firestoreGet(docPath) {
 
     return res.json();
   } catch (err) {
-    console.error("[Victory] firestoreGet FAILED:", err.message);
+    console.error("[LaviX] firestoreGet FAILED:", err.message);
     throw err;
   }
 }
@@ -701,7 +751,7 @@ async function writePairingCode(pairingCode, deviceId, userEmail, uid, userName)
       partners: { arrayValue: { values: [] } }
     });
 
-    console.log("[Victory] device doc created:", deviceId);
+    console.log("[LaviX] device doc created:", deviceId);
 
     const res = await fetch(
       `${FIRESTORE_REST_API}/projects/${firebaseConfig.projectId}/databases/(default)/documents/pairingCodes/${pairingCode}`,
@@ -729,10 +779,10 @@ async function writePairingCode(pairingCode, deviceId, userEmail, uid, userName)
       throw new Error(err.error?.message || "Pairing code write failed");
     }
 
-    console.log("[Victory] pairing code written to Firestore:", pairingCode);
+    console.log("[LaviX] pairing code written to Firestore:", pairingCode);
     return true;
   } catch (err) {
-    console.error("[Victory] pairing code write failed", err);
+    console.error("[LaviX] pairing code write failed", err);
     throw err;
   }
 }
@@ -756,13 +806,13 @@ if (
   try {
     const deviceId = await getDeviceId();
     if (!deviceId) {
-      console.warn("[Victory] No deviceId for partner lookup");
+      console.warn("[LaviX] No deviceId for partner lookup");
       return [];
     }
 
     const data = await firestoreGet(`devices/${deviceId}`);
     if (!data) {
-      console.warn("[Victory] Device doc not found");
+      console.warn("[LaviX] Device doc not found");
       return [];
     }
 
@@ -771,7 +821,7 @@ if (
       .map(p => p.mapValue?.fields?.uid?.stringValue)
       .filter(Boolean);
 
-    console.log("[Victory] Found partners:", partnerUids.length);
+    console.log("[LaviX] Found partners:", partnerUids.length);
 
     if (partnerUids.length > 0) {
       await chrome.storage.local.set({ partnerUids });
@@ -779,114 +829,203 @@ if (
 
     return partnerUids;
   } catch (err) {
-    console.error("[Victory] getPartnerUidsFromDevice failed:", err);
+    console.error("[LaviX] getPartnerUidsFromDevice failed:", err);
     return [];
   }
 }
 
 /* =========================
-   HEARTBEAT WRITE (2-minute interval)
+   HEARTBEAT WRITE (2-hour interval)
 ========================= */
 async function writeHeartbeat() {
   try {
-
     const now = Date.now();
 
-const { lastHeartbeat } = await chrome.storage.local.get("lastHeartbeat");
-
-if (
-    lastHeartbeat &&
-    now - lastHeartbeat < HEARTBEAT_INTERVAL_MS
-) {
-    console.log("[Victory] Heartbeat skipped (already sent recently)");
-    return;
-}
-
-if (!navigator.onLine) {
-
-    console.log("[Victory] Offline, heartbeat skipped");
-
-    return;
-
-}
-
-    const deviceId = await getDeviceId();
-    const { uid } = await chrome.storage.local.get("uid");
-    if (!uid) {
-      console.warn("[Victory] No uid, skipping heartbeat");
+    // Don't attempt network work while offline.
+    if (!navigator.onLine) {
+      console.log("[LaviX] Offline, heartbeat skipped");
       return;
     }
 
-    console.log("[Victory] Writing heartbeat for device:", deviceId);
+    const {
+      uid,
+      firebaseRefreshToken
+    } = await chrome.storage.local.get([
+      "uid",
+      "firebaseRefreshToken"
+    ]);
+
+    // No authenticated session.
+    if (!uid || !firebaseRefreshToken) {
+      console.log(
+        "[LaviX] No authenticated session, heartbeat skipped"
+      );
+      return;
+    }
+
+    const deviceId = await getDeviceId();
+
+    if (!deviceId) {
+      console.warn(
+        "[LaviX] No deviceId, heartbeat skipped"
+      );
+      return;
+    }
+
+    console.log(
+      "[LaviX] Writing heartbeat for device:",
+      deviceId
+    );
+
+    const firebaseIdToken =
+      await getValidFirebaseToken();
 
     const res = await fetch(
       `${FIRESTORE_REST_API}/projects/${firebaseConfig.projectId}/databases/(default)/documents/devices/${deviceId}/heartbeat/status`,
       {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${await getValidFirebaseToken()}`,
+          Authorization: `Bearer ${firebaseIdToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-
-    fields: {
-
-        uid: {
-            stringValue: uid
-        },
-
-        lastSeen: {
-            integerValue: String(now)
-        }
-
-    }
-
-})
+          fields: {
+            uid: {
+              stringValue: uid
+            },
+            lastSeen: {
+              integerValue: String(now)
+            }
+          }
+        })
       }
     );
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || "Heartbeat failed");
-    }
-    
-    await chrome.storage.local.set({
-    lastHeartbeat: now
-});
+      let errorMessage = "Heartbeat failed";
 
+      try {
+        const err = await res.json();
+        errorMessage =
+          err.error?.message || errorMessage;
+      } catch (_) {
+        // Ignore JSON parsing failure.
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    await chrome.storage.local.set({
+      lastHeartbeat: now
+    });
 
     heartbeatRetryCount = 0;
-    console.log("[Victory] heartbeat written successfully");
+
+    console.log(
+      "[LaviX] Heartbeat written successfully:",
+      new Date(now).toISOString()
+    );
+
   } catch (err) {
+
     heartbeatRetryCount++;
-    console.error("[Victory] heartbeat write error:", err.message);
-    
+
+    console.error(
+      "[LaviX] Heartbeat write failed:",
+      err.message
+    );
+
     if (heartbeatRetryCount >= MAX_HEARTBEAT_RETRIES) {
-      console.error("[Victory] Max heartbeat retries reached");
+      console.error(
+        //"[LaviX] Maximum heartbeat retries reached"
+      );
     }
   }
 }
 
-function startHeartbeat() {
-  if (heartbeatTimer) clearInterval(heartbeatTimer);
-  
-  writeHeartbeat();
-  
-  heartbeatTimer = setInterval(writeHeartbeat, HEARTBEAT_INTERVAL_MS);
-}
+async function initializeHeartbeat() {
+  try {
+    const {
+      uid,
+      firebaseRefreshToken
+    } = await chrome.storage.local.get([
+      "uid",
+      "firebaseRefreshToken"
+    ]);
 
-function stopHeartbeat() {
-  if (heartbeatTimer) {
-    clearInterval(heartbeatTimer);
-    heartbeatTimer = null;
+    if (!uid || !firebaseRefreshToken) {
+      console.log(
+        "[LaviX] No authenticated session. Heartbeat not started."
+      );
+      return;
+    }
+
+    console.log(
+      "[LaviX] Existing authenticated session found."
+    );
+
+    // Make sure the alarm exists after the
+    // service worker starts again.
+    await startHeartbeat();
+
+  } catch (err) {
+    console.error(
+      "[LaviX] Heartbeat initialization failed:",
+      err
+    );
   }
 }
+
+
+async function startHeartbeat() {
+  try {
+    // Make sure the alarm exists.
+    // Recreating an alarm with the same name replaces the old one.
+    await chrome.alarms.create(HEARTBEAT_ALARM_NAME, {
+      delayInMinutes: HEARTBEAT_INTERVAL_MINUTES,
+      periodInMinutes: HEARTBEAT_INTERVAL_MINUTES,
+      persistAcrossSessions: true
+    });
+
+    console.log("[LaviX] Heartbeat alarm started");
+
+    // Establish presence immediately instead of waiting 2 hours.
+    await writeHeartbeat();
+
+  } catch (err) {
+    console.error(
+      "[LaviX] Failed to start heartbeat alarm:",
+      err
+    );
+  }
+}
+
+async function stopHeartbeat() {
+  try {
+    const cleared = await chrome.alarms.clear(
+      HEARTBEAT_ALARM_NAME
+    );
+
+    console.log(
+      "[LaviX] Heartbeat alarm stopped:",
+      cleared
+    );
+
+  } catch (err) {
+    console.error(
+      "[LaviX] Failed to stop heartbeat alarm:",
+      err
+    );
+  }
+}
+
+
 
 /* =========================
    BLOCK LOGGING (rate limited, privacy hashed, offline queue)
 ========================= */
 async function logBlockedVisit(url) {
-  console.log("[Victory] logBlockedVisit called with:", url);
+  console.log("[LaviX] logBlockedVisit called with:", url);
 
   try {
     const now = Date.now();
@@ -894,7 +1033,7 @@ async function logBlockedVisit(url) {
     // Global rate limit
     globalLogTimestamps = globalLogTimestamps.filter(ts => now - ts < 60000);
     if (globalLogTimestamps.length >= MAX_LOGS_PER_MINUTE) {
-      console.warn("[Victory] Global rate limit reached");
+      console.warn("[LaviX] Global rate limit reached");
       return;
     }
     globalLogTimestamps.push(now);
@@ -911,17 +1050,17 @@ async function logBlockedVisit(url) {
 
     // Just increase the local counter
     await incrementBlockCount();
-    console.log("[Victory] Block counted locally for domain:", domain);
+    console.log("[LaviX] Block counted locally for domain:", domain);
 
   } catch (err) {
-    console.error("[Victory] logBlockedVisit error:", err);
+    console.error("[LaviX] logBlockedVisit error:", err);
   }
 }
 /* =========================
    MESSAGE LISTENER
 ========================= */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("[Victory] Message received:", msg.type, "from:", sender.tab?.url || "internal");
+  console.log("[LaviX] Message received:", msg.type, "from:", sender.tab?.url || "internal");
   
   if (msg.type === "LOGIN") {
     (async () => {
@@ -964,7 +1103,7 @@ const finalName =
           finalName
         );
 
-        startHeartbeat();
+        await startHeartbeat();
         startOfflineRetryLoop();
 
         sendResponse({
@@ -975,8 +1114,8 @@ const finalName =
           email: authData.email
         });
       } catch (e) {
-    console.error("[Victory] login error:", e);
-    console.error("[Victory] login error:", e);
+    console.error("[LaviX] login error:", e);
+    console.error("[LaviX] login error:", e);
 console.dir(e);
 console.log("message:", e?.message);
 console.log("name:", e?.name);
@@ -1041,10 +1180,10 @@ if (!partnerUids.includes(msg.partnerUid)) {
 
         }
 
-        console.log("[Victory] partner stored:", msg.partnerUid);
+        console.log("[LaviX] partner stored:", msg.partnerUid);
         sendResponse({ ok: true });
       } catch (e) {
-        console.error("[Victory] store partner failed:", e);
+        console.error("[LaviX] store partner failed:", e);
         sendResponse({ ok: false, error: sanitizeString(e.message) });
       }
     })();
@@ -1057,8 +1196,12 @@ if (!partnerUids.includes(msg.partnerUid)) {
         // Write disabled message before logging out
         await writeDisabledMessage();
         
-        stopHeartbeat();
-        if (offlineRetryTimer) clearInterval(offlineRetryTimer);
+        await stopHeartbeat();
+
+       if (offlineRetryTimer) {
+       clearInterval(offlineRetryTimer);
+       offlineRetryTimer = null;
+       }
         
         await chrome.storage.local.remove([
           "uid",
@@ -1074,10 +1217,10 @@ if (!partnerUids.includes(msg.partnerUid)) {
           "partnerUids"
         ]);
 
-        console.log("[Victory] logged out successfully");
+        console.log("[LaviX] logged out successfully");
         sendResponse({ ok: true });
       } catch (e) {
-        console.error("[Victory] logout error:", e);
+        console.error("[LaviX] logout error:", e);
         sendResponse({ ok: false, error: sanitizeString(e.message) });
       }
     })();
@@ -1086,14 +1229,14 @@ if (!partnerUids.includes(msg.partnerUid)) {
   }
 
   if (msg.type === "LOG_BLOCKED_VISIT") {
-    console.log("[Victory] Handling LOG_BLOCKED_VISIT for domain:", msg.domain);
+    console.log("[LaviX] Handling LOG_BLOCKED_VISIT for domain:", msg.domain);
     logBlockedVisit(msg.domain)
       .then(() => {
-        console.log("[Victory] LOG_BLOCKED_VISIT handler complete");
+        console.log("[LaviX] LOG_BLOCKED_VISIT handler complete");
         sendResponse({ ok: true });
       })
       .catch((e) => {
-        console.error("[Victory] LOG_BLOCKED_VISIT handler error:", e);
+        console.error("[LaviX] LOG_BLOCKED_VISIT handler error:", e);
         sendResponse({ ok: false, error: sanitizeString(e.message) });
       });
 
@@ -1115,7 +1258,7 @@ if (!partnerUids.includes(msg.partnerUid)) {
 ========================= */
 if (chrome.declarativeNetRequest?.onRuleMatchedDebug) {
   chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-    console.log("[Victory] DNR rule matched:", info.request.url);
+    console.log("[LaviX] DNR rule matched:", info.request.url);
     logBlockedVisit(info.request.url);
   });
 }
@@ -1127,10 +1270,10 @@ async function debugToken() {
   const base64Payload = token.split('.')[1];
   const payload = JSON.parse(atob(base64Payload.replace(/-/g, '+').replace(/_/g, '/')));
   
-  console.log("[Victory] JWT payload:", payload);
-  console.log("[Victory] JWT sub (uid):", payload.sub);
-  console.log("[Victory] JWT user_id:", payload.user_id);
-  console.log("[Victory] Stored uid:", (await chrome.storage.local.get("uid")).uid);
+  console.log("[LaviX] JWT payload:", payload);
+  console.log("[LaviX] JWT sub (uid):", payload.sub);
+  console.log("[LaviX] JWT user_id:", payload.user_id);
+  console.log("[LaviX] Stored uid:", (await chrome.storage.local.get("uid")).uid);
   
   return payload.sub || payload.user_id;
 }
@@ -1147,7 +1290,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
   chrome.tabs.create({
     url: chrome.runtime.getURL(
-      "popup/popup.html"
+      "popup/popupp.html"
     )
   });
 
@@ -1174,37 +1317,33 @@ async function showEncouragement() {
     chrome.notifications.create({
         type: "basic",
         iconUrl: "icon/icon-192x192.png",
-        title: "Victory",
+        title: "LaviX",
         message
     });
 
 }
 
-function startNotificationScheduler() {
-
-    chrome.alarms.create(
-
-        ENCOURAGEMENT_ALARM,
-
-        {
-
-            delayInMinutes: ENCOURAGEMENT_INTERVAL_MINUTES,
-
-            periodInMinutes: ENCOURAGEMENT_INTERVAL_MINUTES
-
-        }
-
+async function startNotificationScheduler() {
+  try {
+    await chrome.alarms.create(
+      ENCOURAGEMENT_ALARM,
+      {
+        delayInMinutes: ENCOURAGEMENT_INTERVAL_MINUTES,
+        periodInMinutes: ENCOURAGEMENT_INTERVAL_MINUTES,
+        persistAcrossSessions: true
+      }
     );
 
-    console.log("[Victory] Encouragement scheduler started");
-chrome.alarms.onAlarm.addListener((alarm) => {
+    console.log(
+      "[LaviX] Encouragement scheduler started"
+    );
 
-    if (alarm.name !== ENCOURAGEMENT_ALARM)
-        return;
-
-    showEncouragement();
-
-});
+  } catch (err) {
+    console.error(
+      "[LaviX] Failed to start encouragement scheduler:",
+      err
+    );
+  }
 }
 // Call this in console: debugToken()
 /* =========================
@@ -1220,15 +1359,15 @@ async function writeDisabledMessage() {
     ]);
 
     if (!uid || !deviceId) {
-      console.warn("[Victory] Missing uid or deviceId for disabled message");
+      console.warn("[LaviX] Missing uid or deviceId for disabled message");
       return;
     }
 
     const displayName = sanitizeString(userName) || (userEmail ? userEmail.split("@")[0] : "User");
-    const message = `${displayName} disabled the Victory Protection service.`;
+    const message = `${displayName} disabled the LaviX Protection service.`;
 
     const partnerUids = await getPartnerUidsFromDevice();
-    console.log("[Victory] Writing disabled message to", partnerUids.length, "partners");
+    console.log("[LaviX] Writing disabled message to", partnerUids.length, "partners");
 
     const logEntry = {
       uid: uid,
@@ -1244,53 +1383,65 @@ async function writeDisabledMessage() {
     };
 
     if (partnerUids.length === 0) {
-      console.log("[Victory] No partners, writing single disabled message");
+      console.log("[LaviX] No partners, writing single disabled message");
       try {
         await addToOfflineQueue(logEntry);
         processOfflineQueue();
-        console.log("[Victory] Disabled message written");
+        console.log("[LaviX] Disabled message written");
       } catch (err) {
-        console.log("[Victory] Disabled message failed (may be queued):", err.message);
+        console.log("[LaviX] Disabled message failed (may be queued):", err.message);
       }
     } else {
-      console.log("[Victory] Writing disabled messages for", partnerUids.length, "partners");
+      console.log("[LaviX] Writing disabled messages for", partnerUids.length, "partners");
       for (const partnerUid of partnerUids) {
         const partnerLog = { ...logEntry, partnerUid };
         try {
           await addToOfflineQueue(partnerLog);
           processOfflineQueue();
-          console.log("[Victory] Disabled message written for:", partnerUid);
+          console.log("[LaviX] Disabled message written for:", partnerUid);
         } catch (err) {
-          console.log("[Victory] Disabled message failed (may be queued):", err.message);
+          console.log("[LaviX] Disabled message failed (may be queued):", err.message);
         }
       }
     }
   } catch (err) {
-    console.error("[Victory] writeDisabledMessage error:", err);
+    console.error("[LaviX] writeDisabledMessage error:", err);
   }
 }
 
-/* =========================
-   EXTENSION DISABLE DETECTION
-========================= */
-chrome.runtime.onSuspend.addListener(async () => {
-  console.log("[Victory] Extension being suspended/disabled");
-  try {
-    await writeDisabledMessage();
-  } catch (err) {
-    console.error("[Victory] Failed to write disabled message on suspend:", err);
-  }
+
+chrome.runtime.onStartup.addListener(() => {
+  console.log("[LaviX] Chrome profile started");
+  initializeHeartbeat();
 });
 
 /* =========================
    INIT
 ========================= */
-loadBlockedSites();
+async function initializeExtension() {
+  console.log("[LaviX] Initializing background...");
 
-startOfflineRetryLoop();
+  try {
+    await loadBlockedSites();
 
-startNotificationScheduler();
+    startOfflineRetryLoop();
 
-startBatchScheduler();
+    await startNotificationScheduler();
 
-console.log("[Victory] background ready");
+    startBatchScheduler();
+
+    await initializeHeartbeat();
+
+    console.log(
+      "[LaviX] background ready"
+    );
+
+  } catch (err) {
+    console.error(
+      "[LaviX] Background initialization failed:",
+      err
+    );
+  }
+}
+
+initializeExtension();
