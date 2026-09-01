@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LaviX - Safe Browsing & Accountability",
-  "description": "An accountability tool designed to support users in reducing compulsive porn consumption and improving digital wellbeing.",
+  "description": "A safe-browsing and accountability tool for managing screen time and blocking distracting websites.",
   "version": "1.0",
   
 
@@ -39,7 +39,7 @@
   },
 
   "action": {
-    "default_popup": "popup/popupp.html",
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "Icons/favicon-16x16.png",
       "48": "Icons/android-chrome-192x192.png",
@@ -57,16 +57,6 @@
       "matches": ["<all_urls>"]
     }
   ],
-
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "lavix_rules",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
 
   "externally_connectable": {
     "matches": [
